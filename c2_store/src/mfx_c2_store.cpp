@@ -115,6 +115,7 @@ c2_status_t MfxC2ComponentStore::createComponent(C2String name, std::shared_ptr<
                 MFX_LOG_ERROR("Cannot load module %s", it->second.dso_name_.c_str());
                 result = C2_NOT_FOUND;
             }
+            dso_deleter(dso);
         }
         else {
             MFX_LOG_ERROR("Cannot find component %s", name.c_str());

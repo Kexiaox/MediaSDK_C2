@@ -109,6 +109,7 @@ c2_status_t MfxC2FrameIn::MfxC2LoadSurfaceInHW(C2ConstGraphicBlock& c_graph_bloc
         android::UnwrapNativeCodec2GrallocHandle(c_graph_block.handle()), hndl_deleter);
 
     mfxStatus mfx_sts = m_frameConverter->ConvertGrallocToVa(grallocHandle.get(), decode_target, &mem_id);
+    hndl_deleter(grallocHandle);
     if (MFX_ERR_NONE != mfx_sts) {
         res = MfxStatusToC2(mfx_sts);
         return res;

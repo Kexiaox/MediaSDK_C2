@@ -632,7 +632,7 @@ MfxC2DecoderComponent::MfxC2DecoderComponent(const C2String name, const CreateCo
 
     // By default prepare buffer to be displayed on any of the common surfaces
     m_consumerUsage = kDefaultConsumerUsage;
-
+    MFX_ZERO_MEMORY(m_signalInfo);
     //m_paramStorage.DumpParams();
 }
 
@@ -804,7 +804,7 @@ c2_status_t MfxC2DecoderComponent::Release()
     if (m_allocator) {
         m_allocator = nullptr;
     }
-
+    //TODO Check
     if (m_device) {
         m_device->Close();
         if (MFX_ERR_NONE != sts) res = MfxStatusToC2(sts);
@@ -1758,7 +1758,7 @@ c2_status_t MfxC2DecoderComponent::AllocateC2Block(uint32_t width, uint32_t heig
                 c2_status_t sts = m_grallocAllocator->GetBackingStore(hndl.get(), &id);
                 if (m_allocator && !m_allocator->InCache(id)) {
                     res = C2_BLOCKING;
-                    usleep(1000);
+                    usleep(1000); //TODO check
                     // If always fetch a nocached block, check if width or height have changed
                     // compare to when it was initialized.
                     MFX_DEBUG_TRACE_STREAM("fetchGraphicBlock a nocached block, please retune output blocks. id = " << id);
@@ -1813,7 +1813,10 @@ c2_status_t MfxC2DecoderComponent::AllocateFrame(MfxC2FrameOut* frame_out)
 
         std::unique_ptr<native_handle_t, decltype(hndl_deleter)> hndl(
             android::UnwrapNativeCodec2GrallocHandle(out_block->handle()), hndl_deleter);
-
+        if (hndl == nullptr)
+        {
+            continue; //TODO
+        }
         auto it = m_surfaces.end();
         if (m_mfxVideoParams.IOPattern == MFX_IOPATTERN_OUT_VIDEO_MEMORY) {
 
@@ -1851,7 +1854,7 @@ c2_status_t MfxC2DecoderComponent::AllocateFrame(MfxC2FrameOut* frame_out)
                     m_surfacePool.push_back(frame_out->GetMfxFrameSurface());
                 } else {
                     auto it = m_surfacePool.begin();
-                    for(auto mfx_frame: m_surfacePool) {
+                    for(auto& mfx_frame: m_surfacePool) {
                         // Check if there is avaiable surface in the pool
                         if (!mfx_frame->Data.Locked) {
                             auto blk = m_blocks.begin();
@@ -2152,7 +2155,7 @@ void MfxC2DecoderComponent::DoWork(std::unique_ptr<C2Work>&& work)
 
     // notify listener in case of failure or empty output
     if (C2_OK != res || !expect_output || incomplete_frame || flushing) {
-        if (!work) {
+        if (!work) { //TODO check
             std::lock_guard<std::mutex> lock(m_pendingWorksMutex);
             auto it = m_pendingWorks.find(incoming_frame_index);
             if (it != m_pendingWorks.end()) {

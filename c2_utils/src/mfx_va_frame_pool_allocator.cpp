@@ -134,7 +134,7 @@ mfxStatus MfxVaFramePoolAllocator::AllocFrames(mfxFrameAllocRequest *request,
                 native_handle_t *hndl = android::UnwrapNativeCodec2GrallocHandle(new_block->handle());
                 m_grallocAllocator->GetBackingStore(hndl, &id);
                 m_cachedBufferId.emplace(id, i);
-                if (C2_OK != res) {
+                if (C2_OK != res) { //TODO Check
                     native_handle_delete(hndl);
                     mfx_res = MFX_ERR_MEMORY_ALLOC;
                     break;

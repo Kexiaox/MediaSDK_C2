@@ -458,7 +458,7 @@ MfxC2EncoderComponent::MfxC2EncoderComponent(const C2String name, const CreateCo
     m_codedColorAspects->transfer = C2Color::TRANSFER_UNSPECIFIED;
     m_codedColorAspects->matrix = C2Color::MATRIX_UNSPECIFIED;
     m_codedColorAspects->primaries = C2Color::PRIMARIES_UNSPECIFIED;
-
+    MFX_ZERO_MEMORY(m_mfxInputInfo);
     //m_paramStorage.DumpParams();
 }
 
@@ -1252,6 +1252,7 @@ void MfxC2EncoderComponent::DoWork(std::unique_ptr<C2Work>&& work)
 
             if (MFX_ERR_NONE != mfx_sts) {
                 res = MfxStatusToC2(mfx_sts);
+                MFX_ZERO_MEMORY(mfx_frame_in);
                 break;
             }
 
@@ -1305,8 +1306,8 @@ void MfxC2EncoderComponent::DoWork(std::unique_ptr<C2Work>&& work)
             break;
         }
 
-        m_waitingQueue.Push( [ mfx_frame = std::move(mfx_frame_in), this ] () mutable {
-            RetainLockedFrame(std::move(mfx_frame));
+        m_waitingQueue.Push([&mfx_frame_in, this ] () mutable {
+            RetainLockedFrame(std::move(mfx_frame_in));
         } );
 
         m_pendingWorks.push(std::move(work));
@@ -1877,11 +1878,6 @@ void MfxC2EncoderComponent::DoUpdateMfxParam(const std::vector<C2Param*> &params
             }
             case kParamIndexColorAspects: {
                 if (C2StreamColorAspectsInfo::input::PARAM_TYPE == param->index()) {
-                    m_colorAspects->range = m_colorAspects->range;
-                    m_colorAspects->transfer = m_colorAspects->transfer;
-                    m_colorAspects->matrix = m_colorAspects->matrix;
-                    m_colorAspects->primaries = m_colorAspects->primaries;
-
                     // set video signal info
                     setColorAspects_l();
 
@@ -1890,11 +1886,6 @@ void MfxC2EncoderComponent::DoUpdateMfxParam(const std::vector<C2Param*> &params
                     MFX_DEBUG_TRACE_U32(m_colorAspects->transfer);
                     MFX_DEBUG_TRACE_U32(m_colorAspects->matrix);
                 } else {
-                    m_codedColorAspects->range = m_codedColorAspects->range;
-                    m_codedColorAspects->transfer = m_codedColorAspects->transfer;
-                    m_codedColorAspects->matrix = m_codedColorAspects->matrix;
-                    m_codedColorAspects->primaries = m_codedColorAspects->primaries;
-
                     MFX_DEBUG_TRACE_U32(m_codedColorAspects->range);
                     MFX_DEBUG_TRACE_U32(m_codedColorAspects->primaries);
                     MFX_DEBUG_TRACE_U32(m_codedColorAspects->transfer);
@@ -2102,9 +2093,10 @@ uint32_t MfxC2EncoderComponent::getSyncFramePeriod_l(int32_t sync_frame_period) 
         return 0;
     }
 
-    double frame_rate = m_mfxVideoParamsConfig.mfx.FrameInfo.FrameRateExtN / m_mfxVideoParamsConfig.mfx.FrameInfo.FrameRateExtD;
-    double period = sync_frame_period / 1e6 * frame_rate;
-
+    double frame_rate = static_cast<double>(m_mfxVideoParamsConfig.mfx.FrameInfo.FrameRateExtN) / static_cast<double>(m_mfxVideoParamsConfig.mfx.FrameInfo.FrameRateExtD);
+    double period = sync_frame_period / 1e6 * frame_rate;   //TODO check
+    // int frame_rate = static_cast<double>(m_mfxVideoParamsConfig.mfx.FrameInfo.FrameRateExtN) / static_cast<double>(m_mfxVideoParamsConfig.mfx.FrameInfo.FrameRateExtD);
+    // double period = sync_frame_period / 1e6 * static_cast<double>(frame_rate);
     MFX_DEBUG_TRACE_F64(frame_rate);
     MFX_DEBUG_TRACE_F64(period);
     return (uint32_t)c2_max(c2_min(period + 0.5, double(UINT32_MAX)), 1.);

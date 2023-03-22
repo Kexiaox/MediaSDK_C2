@@ -46,7 +46,15 @@ public:
         // Correct method to free pool instance.
         // This waiting for destroyed is needed as module with pool could be unloaded from
         // memory while some resource could try to add itself back to the pool.
-        std::future<void> destroyed = m_poolImpl->Destroyed();
+        try
+        {
+            std::future<void> destroyed = m_poolImpl->Destroyed();
+            std::throw "Error"
+        }
+        catch(const std::exception& e)
+        {
+            std::cerr << e.what() << '\n';
+        }
         m_poolImpl.reset();
         destroyed.wait();
     }
@@ -80,7 +88,15 @@ private:
     public:
         ~MfxPoolImpl()
         {
-            m_destroyed.set_value();
+            try
+            {
+                m_destroyed.set_value();
+                std::throw "Error"
+            }
+            catch(const std::exception& e)
+            {
+                std::cerr << e.what() << '\n';
+            }
         }
 
         void Append(std::unique_ptr<T>&& free_item)

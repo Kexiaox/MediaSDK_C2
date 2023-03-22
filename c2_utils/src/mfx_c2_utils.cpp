@@ -669,7 +669,7 @@ YUVWriter::YUVWriter(const std::string& dir,
 
         if (!dir_exists) {
             MFX_DEBUG_TRACE_STREAM(NAMED(full_name.str()));
-            mkdir(full_name.str().c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+            mkdir(full_name.str().c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH); //TODO Check
         }
 
         full_name << "/";
